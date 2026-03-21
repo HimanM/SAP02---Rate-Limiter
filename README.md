@@ -108,18 +108,63 @@ Custom Python CLI scripts are provided to simulate concurrent traffic bursts and
 
 ## Request Flow Logic
 
+```mermaid
+sequenceDiagram
+    participant User as Client
+    participant Nginx as NGINX Load Balancer
+    participant Gateway as RateGuard Gateway
+    participant Redis as Redis Cache
+    participant Backend as Backend Service
+
+    User->>Nginx: 1. HTTP Request (e.g., GET /api/data)
+    Nginx->>Gateway: 2. Round-Robin to Gateway Replica
+    Gateway->>Gateway: 3. Extract identifier (IP/API key) & endpoint
+    Gateway->>Redis: 4. Build Redis Key (rate_limit:{user}:{path})
+    Redis-->>Gateway: Return current tokens & last refill
+    Gateway->>Gateway: Calculate token refill mathematically
+    
+    alt Tokens < 1 (Rate Limited)
+        Gateway-->>User: 5. Return HTTP 429 Too Many Requests immediately
+    else Tokens >= 1 (Allowed)
+        Gateway->>Redis: 9. Persist updated token count & timestamp
+        Gateway->>Backend: 5. Forward request downstream
+        Backend-->>Gateway: 6. Logic processed & response generated
+        Gateway-->>Gateway: 7. Middleware logs metrics (optional)
+        Gateway-->>User: 8. Return HTTP 200 with JSON payload
+    end
+```
+
 ### 1. Connection Intercept
-External client communication initially establishes contact natively through the **NGINX Load Balancer**. Utilizing Docker DNS routing, traffic is smoothly injected asynchronously into a randomly selected **RateGuard Gateway Replica**.
+The Client sends an initial HTTP request to a target path (e.g., `GET /api/data`). 
 
-### 2. Token Bucket Evaluation
-Before the primary router acknowledges the path, the Flask `@before_request` middleware physically evaluates the user identity against the Redis node.
-* It structurally parses the JSON state to check `remaining_tokens` and `last_refill` parameters.
-* Based on the time delta since the prior interaction, it linearly recalculates new available tokens.
-* If tokens `≥ 1`, it atomically deducts a token, saves the unified timestamp mapping to Redis, and signals approval. 
-* If tokens `< 1`, the gateway immediately rejects the payload natively executing an `HTTP 429 Too Many Requests` denial response.
+### 2. NGINX Ingress Routing
+NGINX receives the external request and actively chooses a specific RateGuard gateway instance utilizing an internal Docker DNS Round-Robin strategy.
 
-### 3. Downstream Forwarding
-Successfully authorized interactions are handled organically by the internal proxy utility. The inbound headers, paths, and payloads are functionally rebuilt and transmitted downstream into the **Backend Cluster Replicas**. The generated backend response is ultimately captured and flushed chronologically back through the exact origin path sequentially.
+### 3. Payload Parsing
+The selected RateGuard instance intercepts the connection natively, extracting the identifying client footprint (such as the true IP parsed from headers or an API key) alongside the requested endpoint.
+
+### 4. Middleware Token Execution
+The modular `check_rate_limit` middleware engages:
+1. It systematically builds the exact string mapping: `rate_limit:{user_id}:{endpoint}`.
+2. It queries Redis for the specific bucket state (tokens & timestamp).
+3. In-memory mathematics instantly calculate new token regeneration based sequentially on the elapsed time delta.
+
+### 5. Throttle Decisioning
+The gateway explicitly bifurcates based on the newly calculated token state:
+* **If capacity is exhausted (<1)**: RateGuard intercepts and kills the proxy chain natively, instantly returning a `429 Too Many Requests` JSON response.
+* **If authorized (≥1)**: The gateway securely decrements exactly 1 token and authorizes the proxy downstream.
+
+### 6. Backend Processing
+The authorized connection flows seamlessly into the internal execution zone. A discrete **Backend Service Replica** captures the input and generates the application payload (e.g., `{"message": "Hello from backend 2"}`).
+
+### 7. Telemetry & Middleware Return
+The backend explicitly returns the completed JSON block structurally to the originating RateGuard gateway, where the middleware sequence captures it temporarily for logging metrics or system validations.
+
+### 8. Response Hand-Off
+RateGuard transparently ejects the identical HTTP response synchronously back to the exact initial client footprint, accompanied cleanly by an `HTTP 200 OK` header block.
+
+### 9. State Persistence
+Simultaneous to the transaction processing natively, Redis organically synchronizes the new decremented token capacity securely, preparing actively for subsequent rapid sequence interactions.
 
 ---
 
