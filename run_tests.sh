@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # ANSI color codes
 CYAN='\033[0;36m'
