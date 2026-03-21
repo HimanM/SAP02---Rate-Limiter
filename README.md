@@ -99,10 +99,10 @@ The system enforces strict HTTP response standards: denied actions immediately r
 High availability is achieved through a **Fail‑Open** strategy. If the Redis cache goes offline or times out, the gateway catches the exception and gracefully permits traffic to pass through. This prioritizes continuous user access over strict rate limit enforcement during partial outages.
 
 ### 8. Load Balancing
-As the single entry point, **NGINX** proxies external traffic across the internal Docker network. It utilizes a Round-Robin distribution methodology, efficiently balancing connections across all active RateGuard gateway backend replicas.
+As the single entry point, **NGINX** proxies external traffic across the internal Docker network. It utilizes a Round-Robin distribution methodology, efficiently balancing connections across all active RateGuard gateway replicas.
 
 ### 9. Testing
-Custom Python CLI scripts are provided to simulate concurrent traffic bursts and sequential load distribution. These scripts validate that the RateGuard token bucket correctly throttles excess requests (HTTP 429) and that NGINX successfully round-robins traffic across all backend replicas.
+Custom Python CLI scripts are provided to simulate concurrent traffic bursts and sequential load distribution. These scripts validate that the RateGuard token bucket correctly throttles excess requests (HTTP 429) and that NGINX successfully round-robbins traffic across all backend replicas.
 
 ---
 
@@ -205,3 +205,11 @@ Generates linear, sequential requests analyzing how internal routing shifts the 
 python tests/load_balance_test.py
 ```
 *Visually renders the distinct dynamic hostname variables returned by discrete Docker backend replicas, technically validating the networking flow distribution.*
+
+## Images
+
+Below are the screenshots and outputs captured during development and testing.
+
+![Docker Compose PS](docs/docker%20compose%20ps.png)
+
+![Test Output](docs/test%20output.png)
