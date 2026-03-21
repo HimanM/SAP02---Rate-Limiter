@@ -1,11 +1,9 @@
 # SYSTEM-ARCHITECTURE-PROJECT-02 RateGuard - Distributed API Gateway with Rate Limiting
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)](#)
 [![Flask](https://img.shields.io/badge/Flask-000000?style=flat&logo=flask&logoColor=white)](#)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=flat&logo=postgresql&logoColor=white)](#)
 [![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white)](#)
-[![Kafka](https://img.shields.io/badge/Kafka-231F20?style=flat&logo=apachekafka&logoColor=white)](#)
 [![Docker](https://img.shields.io/badge/Docker-2CA5E0?style=flat&logo=docker&logoColor=white)](#)
 
 ---
