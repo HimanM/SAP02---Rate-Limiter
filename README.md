@@ -118,7 +118,7 @@ The entire structural framework actively provisions precisely out of the box dyn
 2. Validate Docker Engine core variables.
 3. Natively execute the container build script completely within the repository base:
    ```bash
-   docker-compose up --build -d
+   docker compose up --build -d
    ```
 4. Access the unified backend API cleanly mapped via the edge proxy:
    `http://localhost:8080/api/info`
