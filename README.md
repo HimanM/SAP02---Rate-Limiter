@@ -17,22 +17,7 @@
 ## System Architecture
 The core philosophy revolves around enforcing scalable, distributed rate limits across multiple stateless gateway instances, utilizing a centralized in-memory datastore to track token metrics without blocking the critical request proxy path.
 
-<figure style="max-width:800px; margin:0 0 12px 0;">
-<pre>
-Client
-  ↓
-NGINX (Load Balancer & Entrypoint)
-  ↓
-RateGuard Gateway Instances (Docker Replicas)
-  ├─ Middleware: Token Bucket Rate Limiter
-  └─ Forwarding Logic: Reverse Proxy to backend
-  ↓
-Redis (Shared state buffer)
-  ↓
-Backend Services (Docker Replicas)
-</pre>
-    <figcaption style="font-size:12px; color:#555;">Architecture diagram mapping the reverse proxy flow</figcaption>
-</figure>
+![Architecture Diagram](docs/SAP02-Architecture.png)
 
 ---
 
