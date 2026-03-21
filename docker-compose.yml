@@ -1,0 +1,44 @@
+services:
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - ratenet
+
+  rateguard:
+    build: ./rateguard
+    env_file:
+      - .env
+    environment:
+      - PORT=5000
+    depends_on:
+      - redis
+    deploy:
+      replicas: 3
+    networks:
+      - ratenet
+
+  backend:
+    build: ./backend
+    environment:
+      - PORT=5001
+    deploy:
+      replicas: 3
+    networks:
+      - ratenet
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - rateguard
+    networks:
+      - ratenet
+
+networks:
+  ratenet:
+    driver: bridge
