@@ -75,14 +75,34 @@ SAP02 - Rate Limiter/
 
 ---
 
-## Component Design Reasoning
-Every component within the infrastructure was carefully chosen to solve strict bottlenecks occurring at immense scale:
+## System Design Concepts
 
-* **Token Bucket Algorithm**: RateGuard implements the classic token logic. A mathematical simulation calculates token regeneration (refill rate) against the timestamp of the preceding request. This elegantly enforces sustained limits while securely absorbing temporary traffic spikes (Burst Capacity).
-* **Distributed Shared State**: Replicating gateway nodes natively causes local memory to fracture. To prevent users from circumventing throttling limits by routing to alternate containers, RateGuard actively utilizes **Redis** to synchronize global rate states uniformly across all localized nodes.
-* **Atomic Concurrency Fix (Lua Scripts)**: When multiple concurrent requests (bursts) read a shared distributed state at the exact same millisecond, standard `GET`/`SET` calls induce a massive **Race Condition** giving false-positive approvals before tokens deduct. RateGuard mitigates this by abstracting the mathematical logic into an isolated, modular **Redis Lua Script** (`token_bucket.lua`). Redis automatically evaluates Lua logic atomically on a single thread—mathematically guaranteeing consistent throttling calculations while blocking concurrent collisions.
-* **Fail-Open Design**: In distributed systems, partial failures shouldn't necessarily halt the entire application. The RateGuard middleware includes a **Fail-Open safety net**: if Redis goes offline, the gateway catches the exception and gracefully permits traffic (failing 'open' instead of crashing closed).
-* **Container Replication & DNS Round-Robin**: Instead of explicitly hardcoding gateway nodes, the architecture leverages Docker's embedded `127.0.0.11` DNS resolver within the Nginx configuration natively. Pairing this with Docker Compose `deploy: replicas` horizontally scales the deployment flawlessly on demand.
+### 1. Token Bucket Algorithm
+The system utilizes the classic **Token Bucket Algorithm** to control burst traffic while maintaining sustained velocity. A dynamic mathematical simulation replenishes available capacity iteratively upon each isolated interaction, flawlessly limiting usage spikes.
+
+### 2. Stateless Services
+RateGuard gateways are completely stateless. Each replica processes inbound connections independently and delegates all rate-limit tracking to a centralized Redis cache. This prevents isolated memory fragmentation and ensures rate limits are applied fairly regardless of which gateway replica receives the request.
+
+### 3. Horizontal Scaling
+By decoupling the state (Redis) from the compute (RateGuard), the system seamlessly enables horizontal scaling. New gateway replicas can be spun up dynamically via Docker Compose, and NGINX's internal DNS resolution will automatically begin routing traffic to them.
+
+### 4. Consistency vs Performance
+To prevent users from exploiting race conditions during concurrent request bursts, RateGuard utilizes atomic **Redis Lua Scripts**. This mathematically guarantees that no two threads can evaluate and deduct a single token simultaneously, ensuring strict rate limit enforcement at scale.
+
+### 5. Middleware & Proxy Logic
+A lightweight Flask `@before_request` middleware intercepts incoming traffic to validate token availability. If approved, the payload is transparently forwarded downstream via the proxy utility; if denied, the request is halted immediately at the gateway level.
+
+### 6. API Contracts
+The system enforces strict HTTP response standards: denied actions immediately return an `HTTP 429 Too Many Requests` error, whereas successful requests pass through to the backend, returning the backend's JSON payload along with diagnostic replica metadata.
+
+### 7. Failure Handling
+High availability is achieved through a **Fail‑Open** strategy. If the Redis cache goes offline or times out, the gateway catches the exception and gracefully permits traffic to pass through. This prioritizes continuous user access over strict rate limit enforcement during partial outages.
+
+### 8. Load Balancing
+As the single entry point, **NGINX** proxies external traffic across the internal Docker network. It utilizes a Round-Robin distribution methodology, efficiently balancing connections across all active RateGuard gateway backend replicas.
+
+### 9. Testing
+Custom Python CLI scripts are provided to simulate concurrent traffic bursts and sequential load distribution. These scripts validate that the RateGuard token bucket correctly throttles excess requests (HTTP 429) and that NGINX successfully round-robins traffic across all backend replicas.
 
 ---
 

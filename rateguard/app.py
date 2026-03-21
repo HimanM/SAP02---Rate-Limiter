@@ -8,8 +8,13 @@ app = Flask(__name__)
 @app.before_request
 def rate_limit_middleware():
     # Identify user (IP or API key) and endpoint
-    # In a real app this might use an authorization header.
-    user_id = request.remote_addr or "anonymous"
+    # Since RateGuard is behind an NGINX proxy, extract the true client IP from X-Forwarded-For
+    x_forwarded_for = request.headers.get('X-Forwarded-For')
+    if x_forwarded_for:
+        user_id = x_forwarded_for.split(',')[0].strip()
+    else:
+        user_id = request.remote_addr or "anonymous"
+        
     endpoint = request.path
 
     # Check if request is allowed
