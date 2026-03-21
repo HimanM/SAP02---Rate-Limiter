@@ -26,22 +26,32 @@ The repository is divided into discrete microservices ensuring separation of con
 
 ```text
 SAP02 - Rate Limiter/
-├── rateguard/               # The core Python API Gateway & Middleware
-│   ├── app.py               # Main Flask application and routing
-│   ├── middleware.py        # Token Bucket algorithm and Redis state logic
-│   ├── proxy.py             # Downstream request forwarding system
-│   ├── config.py            # Environment configurations
-│   └── Dockerfile           # Gateway containerization strategy
+├── .env                     # Environment variables configuration
+├── docker-compose.yml       # Production-ready compose configuration
+├── LICENSE                 
+├── README.md                # System documentation
+├── run_tests.sh             # Shell script for running burst and load balance tests
 ├── backend/                 # Simulated business logic servers
 │   ├── app.py               # Mock API returning container replica hostnames
-│   └── Dockerfile           # Backend containerization strategy
+│   ├── Dockerfile           # Backend containerization strategy
+│   └── requirements.txt     # Python dependencies
+├── docs/                    # Image assets
+│   ├── docker compose ps.png
+│   ├── SAP02-Architecture.png
+│   └── test output.png
 ├── nginx/                   # Reverse proxy configuration
 │   └── nginx.conf           # Load balancing strategy and Docker DNS resolution
-├── tests/                   # Analytics and validation scripts
-│   ├── burst_test.py        # Validates rate-limiter Token Bucket capacity
-│   └── load_balance_test.py # Confirms NGINX round-robin functionality
-├── docker-compose.yml       # Production-ready compose configuration
-└── README.md                # System documentation
+├── rateguard/               # The core Python API Gateway & Middleware
+│   ├── app.py               # Main Flask application and routing
+│   ├── config.py            # Environment configurations
+│   ├── Dockerfile           # Gateway containerization strategy
+│   ├── middleware.py        # Token Bucket algorithm and Redis state logic
+│   ├── proxy.py             # Downstream request forwarding system
+│   ├── requirements.txt     # Python dependencies
+│   └── token_bucket.lua     # Atomic Redis Lua script for rate limiting
+└── tests/                   # Analytics and validation scripts
+    ├── burst_test.py        # Validates rate-limiter Token Bucket capacity
+    └── load_balance_test.py # Confirms NGINX round-robin functionality
 ```
 
 ---
